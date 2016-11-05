@@ -4,11 +4,11 @@
 MeRGBLed rgb(0,16);
 MeBuzzer buzzer;
 MeIR ir;
-MeDCMotor MotorL(M1);
-MeDCMotor MotorR(M2);
 MeUltrasonicSensor ultr(PORT_4);
-#define trigPin A2
-#define echoPin A3
+#define trigPinLeft A2
+#define echoPinLeft A3
+#define trigPinRight 9
+#define echoPinRight 10
 
 
 void setup() {
@@ -23,8 +23,10 @@ void setup() {
   ir.begin(); 
   Serial.begin(115200);
 
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
+  pinMode(trigPinLeft, OUTPUT);
+  pinMode(echoPinLeft, INPUT);
+  pinMode(trigPinRight, OUTPUT);
+  pinMode(echoPinRight, INPUT);
 
 
   // Blink and play sounds to show we're alive
@@ -55,16 +57,28 @@ void loop() {
   Serial.println("Old sensor:");
   Serial.println(depthA);
   
-    long duration, distance;
-  digitalWrite(trigPin, LOW);  // Added this line
-  delayMicroseconds(2); // Added this line
-  digitalWrite(trigPin, HIGH);
-//  delayMicroseconds(1000); - Removed this line
-  delayMicroseconds(10); // Added this line
-  digitalWrite(trigPin, LOW);
-  duration = pulseIn(echoPin, HIGH);
+  long duration, distance;
+  digitalWrite(trigPinLeft, LOW); 
+  delayMicroseconds(2);
+  digitalWrite(trigPinLeft, HIGH);
+  delayMicroseconds(10); 
+  digitalWrite(trigPinLeft, LOW);
+  duration = pulseIn(echoPinLeft, HIGH);
   distance = (duration/2) / 29.1;
 
-  Serial.println("New sensor:");
+  Serial.println("New sensor left:");
+  Serial.println(distance);
+
+
+  digitalWrite(trigPinRight, LOW);
+  delayMicroseconds(2); 
+  digitalWrite(trigPinRight, HIGH);
+  delayMicroseconds(10); 
+  digitalWrite(trigPinRight, LOW);
+  duration = pulseIn(echoPinRight, HIGH);
+  distance = (duration/2) / 29.1;
+
+
+  Serial.println("New sensor right:");
   Serial.println(distance);
 }

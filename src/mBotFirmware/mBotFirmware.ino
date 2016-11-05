@@ -5,8 +5,13 @@ MeBuzzer buzzer;
 MeIR ir;
 MeDCMotor MotorL(M1);
 MeDCMotor MotorR(M2);
-MeUltrasonicSensor ultr(PORT_3);
-MeLineFollower line(PORT_2);
+MeUltrasonicSensor centerSensor(PORT_4);
+#define trigPinLeft A2
+#define echoPinLeft A3
+#define trigPinRight 9
+#define echoPinRight 10
+
+
 int16_t moveSpeed = 150;
 
 #define DIRECTION int
@@ -15,18 +20,51 @@ int16_t moveSpeed = 150;
 #define DIR_RIGHT 2
 
 #define ACTIONTIME 100,moveSpeed*3
+#define SENSORCOUNT 5
+#define SENSORMAX 200
 
 class Action;
 
 struct State{
   Action *nextAction;
   Action *previousAction;
-  uint8_t depth;
-
+  long centerDepth;
+  long leftDepth;
+  long rightDepth;
 
   void update(){
-      depth = ultr.distanceCm(100);
-      //uint8_t lineStatus = line.readSensors();
+        // center
+      centerDepth = centerSensor.distanceCm(SENSORMAX);
+      
+        // left
+      long duration;
+      digitalWrite(trigPinLeft, LOW); 
+      delayMicroseconds(2);
+      digitalWrite(trigPinLeft, HIGH);
+      delayMicroseconds(10); 
+      digitalWrite(trigPinLeft, LOW);
+      duration = pulseIn(echoPinLeft, HIGH);
+
+      leftDepth = (duration/2) / 29.1;
+      leftDepth = min(SENSORMAX, leftDepth);
+      
+        // right
+      digitalWrite(trigPinRight, LOW); 
+      delayMicroseconds(2);
+      digitalWrite(trigPinRight, HIGH);
+      delayMicroseconds(10); 
+      digitalWrite(trigPinRight, LOW);
+      duration = pulseIn(echoPinRight, HIGH);
+
+      rightDepth = (duration/2) / 29.1;
+      rightDepth = min(SENSORMAX, rightDepth);        
+
+      Serial.println("center depth:");
+      Serial.println(centerDepth);
+      Serial.println("left depth:");
+      Serial.println(leftDepth);
+      Serial.println("right depth:");
+      Serial.println(rightDepth);
   }
 };
 
@@ -67,7 +105,7 @@ class ActionForward : public Action{
     }
 
     void updatePdf(State *state){
-      m_pdf = max(1, state->depth/5);
+      m_pdf = max(1, state->centerDepth/5);
       Serial.println("Forward pdf: ");
       Serial.println(m_pdf);
     }
@@ -91,7 +129,7 @@ class ActionBackward : public Action{
     }
 
     void updatePdf(State *state){
-      m_pdf = max(1, 2-state->depth/10);
+      m_pdf = max(1, 2-state->centerDepth/10);
       Serial.println("Backward pdf: ");
       Serial.println(m_pdf);
     }
@@ -118,7 +156,7 @@ class ActionRotateLeft : public Action{
       if (state->previousAction && state->previousAction->direction() == DIR_RIGHT){
         m_pdf = 1;
       } else {
-        m_pdf = max(1, 10-state->depth/10);
+        m_pdf = max(1, 10-state->centerDepth/10);
       }
       Serial.println("Left pdf: ");
       Serial.println(m_pdf);
@@ -147,7 +185,7 @@ class ActionRotateRight : public Action{
       if (state->previousAction && state->previousAction->direction() == DIR_LEFT){
         m_pdf = 1;
       } else {
-        m_pdf = max(1, 10-state->depth/10);
+        m_pdf = max(1, 10-state->centerDepth/10);
       }
       Serial.println("Right pdf: ");
       Serial.println(m_pdf);
@@ -209,6 +247,12 @@ void setup() {
   rgb.setpin(13);
   ir.begin(); 
   Serial.begin(115200);
+
+  pinMode(trigPinLeft, OUTPUT);
+  pinMode(echoPinLeft, INPUT);
+  pinMode(trigPinRight, OUTPUT);
+  pinMode(echoPinRight, INPUT);
+
 
   brain = new Brain();
   state = new State();
