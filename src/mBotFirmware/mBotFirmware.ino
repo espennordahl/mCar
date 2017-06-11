@@ -25,6 +25,13 @@ int16_t moveSpeed = 150;
 
 class Action;
 
+float remap (float value, float from1, float to1, float from2, float to2) {
+    float result = (value - from1) / (to1 - from1) * (to2 - from2) + from2;
+    result = min(result, to2);
+    result = max(result, from2);
+    return result;
+}
+
 struct State{
   Action *nextAction;
   Action *previousAction;
@@ -105,7 +112,7 @@ class ActionForward : public Action{
     }
 
     void updatePdf(State *state){
-      m_pdf = max(1, state->centerDepth/5);
+      m_pdf = remap(state->centerDepth, 10, 100, 5, 100);
       Serial.println("Forward pdf: ");
       Serial.println(m_pdf);
     }
@@ -129,7 +136,7 @@ class ActionBackward : public Action{
     }
 
     void updatePdf(State *state){
-      m_pdf = max(1, 2-state->centerDepth/10);
+      m_pdf = remap(state->centerDepth, 50, 0, 1, 50);
       Serial.println("Backward pdf: ");
       Serial.println(m_pdf);
     }
@@ -156,7 +163,7 @@ class ActionRotateLeft : public Action{
       if (state->previousAction && state->previousAction->direction() == DIR_RIGHT){
         m_pdf = 1;
       } else {
-        m_pdf = max(1, 10-state->centerDepth/10);
+        m_pdf = remap(state->centerDepth, 50, 0, 5, 100);
       }
       Serial.println("Left pdf: ");
       Serial.println(m_pdf);
@@ -185,7 +192,7 @@ class ActionRotateRight : public Action{
       if (state->previousAction && state->previousAction->direction() == DIR_LEFT){
         m_pdf = 1;
       } else {
-        m_pdf = max(1, 10-state->centerDepth/10);
+        m_pdf = remap(state->centerDepth, 50, 0, 5, 100);
       }
       Serial.println("Right pdf: ");
       Serial.println(m_pdf);
